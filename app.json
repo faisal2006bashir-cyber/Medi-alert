@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "MediAlert",
+    "slug": "medialert",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#0f7b6c"
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.medialert.app"
+    },
+    "android": {
+      "package": "com.medialert.app",
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM"
+      ]
+    }
+  }
+}

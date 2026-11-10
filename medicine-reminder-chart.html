@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediAlert: web preview</title>
+<style>
+  :root { --bg:#EEF3F6; --panel:#fff; --ink:#13293D; --muted:#5B6B7A; --line:#D5DEE5; --taken:#1E9E73; --open:#DCE5EB; --accent:#2A5BD7; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 16px 48px; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.5; }
+  main { max-width:760px; margin:0 auto; }
+  h1 { font-size:1.6rem; margin:0; }
+  .sub { color:var(--muted); margin:2px 0 18px; }
+  nav { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  nav button { font:inherit; padding:9px 16px; border:2px solid var(--line); background:var(--panel); color:var(--ink); border-radius:999px; cursor:pointer; }
+  nav button[aria-selected="true"] { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
+  h2 { font-size:1.1rem; margin:0 0 12px; }
+  .src { font-size:.85rem; color:var(--muted); margin:14px 0 0; }
+  .src a, .files a { color:var(--accent); }
+  ul.list { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:2px solid var(--line); border-radius:10px; background:var(--panel); font:inherit; color:inherit; width:100%; text-align:left; }
+  button.row { cursor:pointer; }
+  button.row:hover { border-color:var(--accent); }
+  button.row[aria-pressed="true"] { background:#E6F6EF; border-color:var(--taken); }
+  .time { font-weight:700; }
+  .name { color:var(--muted); }
+  .state { font-weight:700; font-size:.9rem; color:var(--muted); white-space:nowrap; }
+  [aria-pressed="true"] .state { color:var(--taken); }
+  .del { font:inherit; border:1px solid var(--line); background:#fff; color:#B3261E; padding:6px 12px; border-radius:8px; cursor:pointer; }
+  .empty { color:var(--muted); margin:0; }
+  form { display:grid; gap:14px; max-width:380px; }
+  label { display:grid; gap:4px; font-weight:700; }
+  input { font:inherit; font-weight:400; padding:10px 12px; border:2px solid var(--line); border-radius:8px; }
+  .primary { font:inherit; font-weight:700; padding:11px 16px; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+  .msg { min-height:1.4em; color:var(--taken); font-weight:700; margin:0; }
+  .summary { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+  .summary strong { font-size:2rem; line-height:1; }
+  .summary span { color:var(--muted); }
+  .chart { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; align-items:end; }
+  .day { display:grid; gap:4px; justify-items:center; font-size:.85rem; }
+  .bar { width:100%; max-width:40px; height:130px; display:flex; flex-direction:column-reverse; gap:3px; }
+  .seg { flex:1; border-radius:5px; background:var(--open); }
+  .seg.on { background:var(--taken); }
+  .day.today .bar { outline:2px solid var(--accent); outline-offset:4px; border-radius:6px; }
+  .day .lbl { color:var(--muted); } .day.today .lbl { color:var(--accent); font-weight:700; }
+  .legend { display:flex; gap:16px; margin-top:14px; color:var(--muted); font-size:.9rem; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+  .files h3 { font-size:.95rem; margin:14px 0 6px; color:var(--muted); }
+  .files ul { margin:0; padding-left:20px; }
+  .note { font-size:.9rem; color:var(--muted); margin:12px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MediAlert</h1>
+  <p class="sub" id="date"></p>
+
+  <nav role="tablist" aria-label="Screens">
+    <button role="tab" data-tab="today" aria-selected="true">Today</button>
+    <button role="tab" data-tab="medicines" aria-selected="false">Medicines</button>
+    <button role="tab" data-tab="add" aria-selected="false">Add medicine</button>
+    <button role="tab" data-tab="files" aria-selected="false">Project files</button>
+  </nav>
+
+  <div id="tab-today">
+    <section>
+      <h2>Today's doses</h2>
+      <ul class="list" id="doses"></ul>
+      <p class="src">Mirrors <a href="src/screens/TodayScreen.js">src/screens/TodayScreen.js</a></p>
+    </section>
+    <section>
+      <h2>Last 7 days</h2>
+      <div class="summary"><strong id="pct">0%</strong><span id="pct-note"></span></div>
+      <div class="chart" id="chart" role="img" aria-label="Doses taken each day over the last 7 days"></div>
+      <div class="legend"><span><i style="background:var(--taken)"></i>Taken</span><span><i style="background:var(--open)"></i>Not taken</span></div>
+      <p class="note">The six earlier days are sample data.</p>
+    </section>
+  </div>
+
+  <div id="tab-medicines" hidden>
+    <section>
+      <h2>Your medicines</h2>
+      <ul class="list" id="meds"></ul>
+      <p class="src">Mirrors <a href="src/screens/MedicinesScreen.js">src/screens/MedicinesScreen.js</a></p>
+    </section>
+  </div>
+
+  <div id="tab-add" hidden>
+    <section>
+      <h2>Add medicine</h2>
+      <form id="form">
+        <label>Medicine name <input id="f-name" required maxlength="60" autocomplete="off"></label>
+        <label>Reminder time <input id="f-time" type="time" value="08:00" required></label>
+        <button class="primary" type="submit">Save medicine</button>
+        <p class="msg" id="msg" role="status"></p>
+      </form>
+      <p class="src">Mirrors <a href="src/screens/AddMedicineScreen.js">src/screens/AddMedicineScreen.js</a> and <a href="src/components/TimeField.js">TimeField.js</a></p>
+    </section>
+  </div>
+
+  <div id="tab-files" hidden>
+    <section class="files">
+      <h2>Project files</h2>
+      <p class="note" style="margin-top:0">These links work when this page sits in the MediAlertApp folder. Your browser may download the files instead of showing them.</p>
+      <h3>Screens</h3>
+      <ul>
+        <li><a href="src/screens/TodayScreen.js">TodayScreen.js</a></li>
+        <li><a href="src/screens/MedicinesScreen.js">MedicinesScreen.js</a></li>
+        <li><a href="src/screens/AddMedicineScreen.js">AddMedicineScreen.js</a></li>
+      </ul>
+      <h3>Components</h3>
+      <ul>
+        <li><a href="src/components/TimeField.js">TimeField.js</a></li>
+        <li><a href="src/components/ui.js">ui.js</a></li>
+        <li><a href="src/components/TabBar.js">TabBar.js</a></li>
+        <li><a href="src/components/AlarmModal.js">AlarmModal.js</a></li>
+      </ul>
+      <h3>App logic</h3>
+      <ul>
+        <li><a href="src/logic.js">logic.js</a></li>
+        <li><a href="src/schedule.js">schedule.js</a></li>
+        <li><a href="src/notifications.js">notifications.js</a></li>
+        <li><a href="src/storage.js">storage.js</a></li>
+        <li><a href="src/theme.js">theme.js</a></li>
+      </ul>
+      <h3>Project root</h3>
+      <ul>
+        <li><a href="App.js">App.js</a></li>
+        <li><a href="index.js">index.js</a></li>
+        <li><a href="app.json">app.json</a></li>
+        <li><a href="package.json">package.json</a></li>
+        <li><a href="babel.config.js">babel.config.js</a></li>
+        <li><a href="README.md">README.md</a></li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<script>
+  var KEY = "medialert-web-preview";
+  var history = [3, 3, 2, 3, 1, 3]; // sample: doses taken on the 6 days before today
+  var todayKey = new Date().toDateString();
+
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.meds) return s; } catch (e) {}
+    return { meds: [
+      { id: 1, name: "Vitamin D", time: "08:00" },
+      { id: 2, name: "Allergy tablet", time: "13:00" },
+      { id: 3, name: "Omega-3", time: "20:00" }
+    ], date: "", taken: [] };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var state = load();
+  if (state.date !== todayKey) { state.date = todayKey; state.taken = []; }
+
+  function sorted() { return state.meds.slice().sort(function (a, b) { return a.time < b.time ? -1 : 1; }); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function renderToday() {
+    var list = document.getElementById("doses"); list.innerHTML = "";
+    var meds = sorted();
+    if (!meds.length) { list.appendChild(el("li", "empty", "No medicines yet. Use Add medicine to create one.")); }
+    meds.forEach(function (m) {
+      var on = state.taken.indexOf(m.id) > -1;
+      var li = el("li"); var b = el("button", "row"); b.type = "button"; b.setAttribute("aria-pressed", String(on));
+      var left = el("span"); left.appendChild(el("span", "time", m.time)); left.appendChild(document.createElement("br")); left.appendChild(el("span", "name", m.name));
+      b.appendChild(left); b.appendChild(el("span", "state", on ? "Taken" : "Mark as taken"));
+      b.onclick = function () {
+        var i = state.taken.indexOf(m.id);
+        if (i > -1) state.taken.splice(i, 1); else state.taken.push(m.id);
+        save(); renderToday(); renderChart();
+      };
+      li.appendChild(b); list.appendChild(li);
+    });
+  }
+
+  function renderChart() {
+    var total = Math.max(state.meds.length, 1);
+    var todayCount = state.taken.filter(function (id) { return state.meds.some(function (m) { return m.id === id; }); }).length;
+    var counts = history.map(function (c) { return Math.min(c, total); }).concat(todayCount);
+    var chart = document.getElementById("chart"); chart.innerHTML = "";
+    var fmt = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+    counts.forEach(function (c, i) {
+      var d = new Date(); d.setDate(d.getDate() - (counts.length - 1 - i));
+      var last = i === counts.length - 1;
+      var col = el("div", "day" + (last ? " today" : ""));
+      var bar = el("div", "bar");
+      for (var s = 0; s < total; s++) bar.appendChild(el("div", "seg" + (s < c ? " on" : "")));
+      col.appendChild(bar); col.appendChild(el("div", null, c + "/" + total)); col.appendChild(el("div", "lbl", last ? "Today" : fmt.format(d)));
+      chart.appendChild(col);
+    });
+    var sum = counts.reduce(function (a, b) { return a + b; }, 0), all = counts.length * total;
+    document.getElementById("pct").textContent = Math.round(sum / all * 100) + "%";
+    document.getElementById("pct-note").textContent = sum + " of " + all + " doses taken";
+  }
+
+  function renderMeds() {
+    var list = document.getElementById("meds"); list.innerHTML = "";
+    var meds = sorted();
+    if (!meds.length) { list.appendChild(el("li", "empty", "No medicines yet. Use Add medicine to create one.")); }
+    meds.forEach(function (m) {
+      var li = el("li", "row");
+      var left = el("span"); left.appendChild(el("span", "time", m.time)); left.appendChild(document.createElement("br")); left.appendChild(el("span", "name", m.name));
+      var del = el("button", "del", "Remove"); del.type = "button"; del.setAttribute("aria-label", "Remove " + m.name);
+      del.onclick = function () {
+        state.meds = state.meds.filter(function (x) { return x.id !== m.id; });
+        state.taken = state.taken.filter(function (id) { return id !== m.id; });
+        save(); renderAll();
+      };
+      li.appendChild(left); li.appendChild(del); list.appendChild(li);
+    });
+  }
+
+  function renderAll() { renderToday(); renderChart(); renderMeds(); }
+
+  document.getElementById("form").onsubmit = function (e) {
+    e.preventDefault();
+    var name = document.getElementById("f-name").value.trim();
+    var time = document.getElementById("f-time").value;
+    if (!name || !time) return;
+    var id = state.meds.reduce(function (a, m) { return Math.max(a, m.id); }, 0) + 1;
+    state.meds.push({ id: id, name: name, time: time });
+    save(); renderAll();
+    document.getElementById("f-name").value = "";
+    document.getElementById("msg").textContent = name + " saved for " + time + ".";
+  };
+
+  var tabs = document.querySelectorAll("nav button");
+  tabs.forEach(function (t) {
+    t.onclick = function () {
+      tabs.forEach(function (x) {
+        var on = x === t; x.setAttribute("aria-selected", String(on));
+        document.getElementById("tab-" + x.dataset.tab).hidden = !on;
+      });
+      document.getElementById("msg").textContent = "";
+    };
+  });
+
+  document.getElementById("date").textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+  renderAll();
+</script>
+</body>
+</html>
